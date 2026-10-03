@@ -55,10 +55,11 @@ function visionReply(): string {
 function analysisReply(promptText: string): string {
   const message = (promptText.match(/<untrusted_message[^>]*>([\s\S]*?)<\/untrusted_message/)?.[1] ?? promptText).replace(/\\n/g, "\n");
   const lower = message.toLowerCase();
-  const hits = SCAM_WORDS.filter((w) => lower.includes(w));
+  const wordAt = (w: string) => lower.search(new RegExp(`\\b${w}\\b`));
+  const hits = SCAM_WORDS.filter((w) => wordAt(w) >= 0);
   const riskScore = Math.min(95, hits.length * 22);
   const redFlags = hits.slice(0, 3).map((word) => {
-    const index = lower.indexOf(word);
+    const index = wordAt(word);
     return { quote: message.slice(index, index + word.length), explanation: `"${word}" is a common pressure or payment tactic.` };
   });
   return JSON.stringify({

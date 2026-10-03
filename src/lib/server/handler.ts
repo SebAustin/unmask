@@ -21,8 +21,12 @@ export interface ApiEnvelope<T> {
   readonly requestId: string;
 }
 
-const RATE_LIMIT_PER_MINUTE = 10;
-const defaultLimiter = createRateLimiter(RATE_LIMIT_PER_MINUTE, 60_000);
+const DEFAULT_RATE_LIMIT_PER_MINUTE = 10;
+const configuredLimit = Number(process.env.RATE_LIMIT_PER_MINUTE);
+const defaultLimiter = createRateLimiter(
+  Number.isInteger(configuredLimit) && configuredLimit > 0 ? configuredLimit : DEFAULT_RATE_LIMIT_PER_MINUTE,
+  60_000,
+);
 
 export interface HandlerDeps {
   readonly env?: ServerEnv;
