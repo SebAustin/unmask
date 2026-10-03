@@ -4,6 +4,10 @@ Paste a suspicious text, email, link or screenshot. Unmask shows the exact red f
 
 Built for ForgeHacks 2026, AI + Cybersecurity track.
 
+**Live demo:** https://unmask-ivory.vercel.app · **Architecture:** [ARCHITECTURE.md](ARCHITECTURE.md) · **Security review:** [SECURITY.md](SECURITY.md)
+
+[![CI](https://github.com/SebAustin/unmask/actions/workflows/ci.yml/badge.svg)](https://github.com/SebAustin/unmask/actions/workflows/ci.yml)
+
 ## The problem
 
 Scams are cheap to personalize now. Voice cloning, LLM-written messages and lookalike sites remove the old tells like typos and odd grammar. Victims usually have somewhere to report. What they lack is a fast second opinion at the moment of doubt, and a safe way to find out who is really contacting them.

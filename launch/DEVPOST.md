@@ -8,8 +8,8 @@ Deadline: Oct 10 2026, 11:00 CDT. Internal target (REQUIREMENTS SC-20): ready by
 
 Items marked `[unverified]` or `<<...>>` below must be resolved before pasting.
 
-- [ ] Public GitHub repo created and pushed (not done yet, per STATUS.md "Gated"). Fill `<<GITHUB_URL>>`.
-- [ ] Vercel deploy live, env vars set (FEATHERLESS_API_KEY, Firewall rate rule, Featherless spend cap per SECURITY F-05). Fill `<<DEMO_URL>>`.
+- [ ] Public GitHub repo created and pushed (not done yet, per STATUS.md "Gated"). Fill `https://github.com/SebAustin/unmask`.
+- [ ] Vercel deploy live, env vars set (FEATHERLESS_API_KEY, Firewall rate rule, Featherless spend cap per SECURITY F-05). Fill `https://unmask-ivory.vercel.app`.
 - [ ] `EVAL_LIVE=1 pnpm eval` run with a key. Fill the `<<LIVE_EVAL: ...>>` placeholders and the README TODO. Cite one report only: `evals/RESULTS.md`.
 - [ ] Screenshots retaken with the live model. The committed ones were captured with `AI_MOCK=1` and show "(mock analysis)" (the boss-gift-card shot reads "Nothing in this message looks like a known scam pattern" next to a SCAM stamp).
 - [ ] Demo video recorded (see `launch/DEMO-SCRIPT.md`), uploaded where anyone can watch without logging in (Devpost requires a public video). Fill `<<VIDEO_URL>>`.
@@ -36,8 +36,8 @@ Paste a suspicious text, email, link or screenshot. Unmask quotes the exact red 
 
 | Field | Value |
 |---|---|
-| GitHub repository | `<<GITHUB_URL>>` |
-| Live demo | `<<DEMO_URL>>` |
+| GitHub repository | `https://github.com/SebAustin/unmask` |
+| Live demo | `https://unmask-ivory.vercel.app` |
 | Demo video (public, 2-4 min) | `<<VIDEO_URL>>` |
 
 ---

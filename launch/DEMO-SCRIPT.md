@@ -6,7 +6,7 @@ Narration pace is about 150 words per minute. Each beat lists its word count so 
 
 ## Setup before recording
 
-1. Run the live app, not the mock: `<<DEMO_URL>>` or `pnpm dev` with `FEATHERLESS_API_KEY` in `.env.local`. The committed screenshots used `AI_MOCK=1` and show "(mock analysis)" with summaries that contradict the stamp. Do not record that.
+1. Run the live app, not the mock: `https://unmask-ivory.vercel.app` or `pnpm dev` with `FEATHERLESS_API_KEY` in `.env.local`. The committed screenshots used `AI_MOCK=1` and show "(mock analysis)" with summaries that contradict the stamp. Do not record that.
 2. Rate limit is 10 checks per minute per IP. This script runs 3 checks (4 with the optional insert). Do not retake in a loop.
 3. Browser at 1440 wide, light theme, zoom 100%, notifications off, no personal tabs. Page scrolled to top.
 4. Prepare two things that are not in the gallery:
@@ -150,7 +150,7 @@ Backs: ARCHITECTURE.md, README. Models default to `Qwen/Qwen3-VL-30B-A3B-Instruc
 
 ## 3:10 to 3:20  Impact and close
 
-**Shot:** Back to the home page, the headline "Is it really them, or a scam?" and `<<DEMO_URL>>` as a text overlay, plus the GitHub URL `<<GITHUB_URL>>`.
+**Shot:** Back to the home page, the headline "Is it really them, or a scam?" and `https://unmask-ivory.vercel.app` as a text overlay, plus the GitHub URL `https://github.com/SebAustin/unmask`.
 
 **Narration (about 25 words):**
 
