@@ -92,7 +92,7 @@ EVAL_LIVE=1 pnpm eval # evaluation against the real Featherless models
 pnpm lint && pnpm typecheck
 ```
 
-Current numbers: 107 unit and integration tests at about 90% statement coverage on `src/lib` (89.7%). The Playwright suite has 13 scenarios run on desktop and mobile Chrome (26 runs), including axe accessibility checks in light and dark themes and a production-CSP check.
+Current numbers: 132 unit and integration tests (including an adversarial-input performance table) at about 89% statement coverage on `src/lib`. The Playwright suite has 13 scenarios run on desktop and mobile Chrome (26 runs), including axe accessibility checks in light and dark themes and a production-CSP check.
 
 ## Evaluation
 

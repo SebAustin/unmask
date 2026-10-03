@@ -23,7 +23,7 @@ ForgeHacks Online 2026 · Track: **AI + Cybersecurity** · Deadline Oct 10 2026 
 - `ModelAssessment { riskScore, scamType, claimedIdentity|null, requestedAction|null, summary, unverifiable[], redFlags[{quote, explanation}] }` — label is NOT taken from the model.
 - `Verdict { label: scam|suspicious|likely_safe, riskScore, scamType, claimedIdentity, requestedAction, summary, unverifiable[], redFlags[{quote, explanation, source, start, end}], signals[], verificationPlan[], degraded, degradedReason: null|provider_error|timeout|rate_limited|parse_failed|not_configured, masks[] }` — Recovery Steps are NOT in the Verdict: they are static client-side content keyed by action (always available).
 - `ApiEnvelope<T> { ok, data|null, error: {code, message}|null, requestId }`
-- **Scam Type taxonomy** — single source of truth: `ScamType` `z.enum` in `src/lib/domain/scam-type.ts`, matching CONTEXT.md (bank, government, delivery, tech_support, job, romance, crypto_investment, invoice_ceo, family_emergency, prize, account_takeover, other, none) — `none` ("no scam pattern") added to CONTEXT.md.
+- **Scam Type taxonomy** — single source of truth: `ScamTypeSchema` `z.enum` in `src/lib/domain/verdict.ts`, matching CONTEXT.md (bank, government, delivery, tech_support, job, romance, crypto_investment, invoice_ceo, family_emergency, prize, account_takeover, other, none) — `none` ("no scam pattern") added to CONTEXT.md.
 
 ## Architecture
 ```
@@ -58,7 +58,7 @@ SubmissionInput ──► ingest/  (vision call ONLY if image; returns extracted
 - **Image + other input, vision fails:** continue with the remaining input; Verdict gets `unverifiable: ["screenshot could not be read"]` (not degraded unless analysis also fails). Unit-tested.
 - **Image-only + vision failure:** never a Verdict. Return `ok: false, code: "image_unreadable"` ("We couldn't read that screenshot — paste the text instead"). E2E-tested.
 - **Mock model:** `AI_MOCK=1` enables a deterministic keyword-driven mock. When mock is on (and only then — `env.ts` refuses `AI_MOCK` when `VERCEL_ENV=production`), sentinel tokens in the message select behaviour within one E2E run: `[[mock:fail]]`, `[[mock:timeout]]`, `[[mock:malformed]]` (bad JSON first, valid on repair), `[[mock:vision-fail]]`.
-- **Observability:** `src/lib/log.ts` structured logger with an allow-list of fields (requestId, inputTypes, per-stage latencyMs, status, degraded, model, repairRetried). `requestId` returned in the envelope.
+- **Observability:** `src/lib/server/log.ts` structured logger with an allow-list of fields (requestId, inputTypes, per-stage latencyMs, status, degraded, model, repairRetried). `requestId` returned in the envelope.
 
 ## Scoring rules (fuse/, unit-tested case by case)
 - Severity weights: low 5 · medium 15 · high 30 · hard 50. `signalScore = min(100, Σ weights)` with each signal id counted once.
@@ -73,9 +73,9 @@ SubmissionInput ──► ingest/  (vision call ONLY if image; returns extracted
 | url.lookalike-domain (exact after character swaps: paypa1, amaz0n, rn→m), url.brand-in-subdomain (non-common-word brand), url.punycode (decoded label imitates a brand), url.userinfo-trick | hard |
 | url.lookalike-domain fuzzy (edit distance 1 for brands < 8 letters, 2 for ≥ 8; allowlist of everyday words: finance, team, mobile, email, apply, horizon…), url.brand-in-subdomain for common-word brands (apple, chase, steam, outlook) | high |
 | url.punycode not imitating a brand | medium |
-| url.ip-host | high · url.shortener, url.risky-tld medium · url.excess-subdomains, url.plain-http low |
+| url.ip-host | high · url.shortener, url.risky-tld, url.user-content-on-official medium · url.excess-subdomains low |
 | text.gift-card-payment, text.remote-access, text.guaranteed-returns, text.credential-request, text.secrecy | high |
-| text.crypto-payment, text.wire-p2p-payment, text.urgency, text.threat-authority, text.prize, text.job-pay, text.family-emergency | medium |
+| text.crypto-payment, text.wire-p2p-payment, text.money-request, text.urgency, text.threat-authority, text.prize, text.job-pay, text.family-emergency | medium |
 | header.display-name-brand-mismatch (brand in display name, non-official domain) | hard |
 | header.reply-to-mismatch | medium (hard only combined with display-name brand → combo) |
 | header.auth-fail (SPF/DKIM/DMARC fail) | high · header.return-path-mismatch low (ESP bounce domains are normal) |
@@ -90,7 +90,7 @@ SubmissionInput ──► ingest/  (vision call ONLY if image; returns extracted
 - text ≤ 10 000 chars · headers ≤ 20 KB · url ≤ 2 048 chars · image data URL ≤ 4 MB **encoded** (~3 MB decoded; FR-16's 4 MB cap holds), client-resized to ≤ 1600 px JPEG targeting ≤ 1.5 MB · route rejects larger bodies with an envelope 413; the client also maps Vercel's platform (non-JSON) 413 to the same friendly message.
 - Per-request deadline: 18 s text-only, 35 s with image (NFR-2 p95 < 20 s text). Vision gets ≤ 15 s; analysis gets the remainder; the repair retry only runs if ≥ 5 s remain, else degraded. Route `maxDuration = 60`. Calls are sequential (concurrency units).
 - Rate limit: in-memory sliding window, 10 req/min/IP, IP from the first `x-forwarded-for` hop (Vercel), else shared `"unknown"` bucket (documented limitation: per-instance).
-- `src/lib/env.ts` zod-validates env at startup; missing key and mock off → degraded Verdict with `degradedReason: "not_configured"`.
+- `src/lib/server/env.ts` zod-validates env at startup; missing key and mock off → degraded Verdict with `degradedReason: "not_configured"`.
 - Security headers in `next.config.ts` `headers()`: HSTS, nosniff, `X-Frame-Options: DENY`, referrer, permissions policy, and CSP `default-src 'self'; script-src 'self' 'unsafe-inline' (+ 'unsafe-eval' only when NODE_ENV=development); style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'`. Documented trade-off: `'unsafe-inline'` scripts instead of nonces keeps pages static (Next App Router inline bootstrap); no user HTML is ever rendered (React escaping only, no `dangerouslySetInnerHTML`). Fonts self-hosted via `next/font`. Playwright check on `pnpm build && pnpm start`: hydrates with zero CSP console errors.
 - UI progress states: "Reading screenshot…", "Checking links…", "Analyzing…".
 
