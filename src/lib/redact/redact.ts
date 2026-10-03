@@ -22,13 +22,20 @@ const lastFour = (digits: string) => digits.replace(/\D/g, "").slice(-4);
 // Order matters: specific, keyword-anchored rules run before the generic card rule.
 const MASK_RULES: readonly MaskRule[] = [
   {
+    // "password: X" / "password=X" — but never a link or domain, which is evidence (e.g. "Reset password: paypa1.com").
     type: "password",
-    pattern: /\b(password|passcode|pwd)(\s*(?::|is)\s*)(\S+)/gi,
+    pattern: /\b(password|passcode|passwd|pwd|pass)( ?[:=] ?)(?!https?:\/\/|www\.|[\w-]+(?:\.[\w-]+)+)(\S+)/gi,
+    replace: (m) => `${m[1]}${m[2]}[password]`,
+  },
+  {
+    // "my password is X" — only when X looks like a secret (contains a digit or symbol), not "is about to expire".
+    type: "password",
+    pattern: /\b(password|passcode)( is )(?!https?:\/\/|www\.|[\w-]+(?:\.[\w-]+)+)(?=\S*[\d!#$%&*@^~])(\S+)/gi,
     replace: (m) => `${m[1]}${m[2]}[password]`,
   },
   {
     type: "code",
-    pattern: /\b(code|otp|pin)(\s*(?::|is)\s*)(\d{4,8})\b/gi,
+    pattern: /\b(code|otp|pin|cvv|cvc|security code)(\s*(?::|=|is)?\s*)(\d{3,8})\b/gi,
     replace: (m) => `${m[1]}${m[2]}[code]`,
   },
   {
@@ -38,12 +45,12 @@ const MASK_RULES: readonly MaskRule[] = [
   },
   {
     type: "ssn",
-    pattern: /\b\d{3}-\d{2}-\d{4}\b/g,
+    pattern: /\b\d{3}-\d{2}-\d{4}\b|(?<=\b(?:ssn|social security(?: number)?)\s*(?:#|:|is)?\s*)\d{9}\b/gi,
     replace: () => "[SSN]",
   },
   {
     type: "iban",
-    pattern: /\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g,
+    pattern: /\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,4})?\b/gi,
     replace: () => "[IBAN]",
   },
   {
@@ -53,13 +60,13 @@ const MASK_RULES: readonly MaskRule[] = [
   },
   {
     type: "account",
-    pattern: /\b(account(?:\s+(?:number|no\.?|#))?\s*:?\s*)(\d{6,17})\b/gi,
+    pattern: /\b((?:account|acct|a\/c)(?:\s+(?:number|no\.?|#))?\s*[:#]?\s*)(\d{6,17})\b/gi,
     replace: (m) => `${m[1]}[account ••••${lastFour(m[2])}]`,
   },
   {
     type: "card",
     // 13–19 digits, optionally grouped by spaces or dashes; never preceded by "+" (phone numbers).
-    pattern: /(?<![+\d])\d(?:[ -]?\d){12,18}(?!\d)/g,
+    pattern: /(?<![+\d])\d(?:[ .-]?\d){12,18}(?!\d)/g,
     replace: (m) => (passesLuhn(m[0].replace(/\D/g, "")) ? `[card ••••${lastFour(m[0])}]` : null),
   },
 ];

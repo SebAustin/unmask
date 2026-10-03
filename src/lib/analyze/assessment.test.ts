@@ -30,6 +30,16 @@ describe("parseAssessment", () => {
     });
   });
 
+  it("keeps valid red flags when one is malformed", () => {
+    const mixed = { ...valid, redFlags: [{ quote: "a" }, { quote: "redelivery fee", explanation: "fee" }] };
+    expect(parseAssessment(JSON.stringify(mixed))).toMatchObject({ value: { redFlags: [{ quote: "redelivery fee" }] } });
+  });
+
+  it("rejects a null or empty risk score so the repair retry can run", () => {
+    expect(parseAssessment(JSON.stringify({ ...valid, riskScore: null }))).toMatchObject({ ok: false });
+    expect(parseAssessment(JSON.stringify({ ...valid, riskScore: "" }))).toMatchObject({ ok: false });
+  });
+
   it("clamps the risk score to 0-100", () => {
     expect(parseAssessment(JSON.stringify({ ...valid, riskScore: 140 }))).toMatchObject({ value: { riskScore: 100 } });
   });

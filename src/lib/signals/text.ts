@@ -59,7 +59,7 @@ const TEXT_RULES: readonly TextRule[] = [
     title: "Asks for a code, password or login",
     explanation: "Real companies never ask you to send or read out a verification code or password.",
     pattern: /\b(?:(?:send|tell|give|share|read|forward|reply with|confirm)\b[^.!?\n]{0,30}\b(?:code|otp|pin|password|passcode)|(?:verify|confirm|update) your (?:account|identity|login|password|card details)|login details)\b/i,
-    unless: /\b(?:do not|don't|never|won't ever|will never)\b[^.!?\n]{0,20}\b(?:share|give|tell|send)\b/i,
+    unless: /\b(?:do not|don't|never|won't ever|will never)\s+(?:\w+\s+){0,2}(?:share|give|tell|send|forward)\b/i,
   },
   {
     id: "text.secrecy",
@@ -131,9 +131,12 @@ function firstUnnegatedMatch(text: string, rule: TextRule): string | null {
   return null;
 }
 
+const CLAUSE_BREAKS = [".", "!", "?", ",", ";", "\n"];
+
+/** The clause around a match, so "Don't worry, send me the code" isn't read as a negation of "send". */
 function sentenceAround(text: string, index: number, length: number): string {
-  const start = Math.max(text.lastIndexOf(".", index), text.lastIndexOf("\n", index), 0);
-  const endCandidates = [".", "!", "?", "\n"].map((c) => text.indexOf(c, index + length)).filter((i) => i >= 0);
+  const start = Math.max(0, ...CLAUSE_BREAKS.map((c) => text.lastIndexOf(c, index)));
+  const endCandidates = CLAUSE_BREAKS.map((c) => text.indexOf(c, index + length)).filter((i) => i >= 0);
   const end = endCandidates.length ? Math.min(...endCandidates) : text.length;
   return text.slice(start, end);
 }

@@ -1,6 +1,6 @@
 import { domainToUnicode } from "node:url";
 import type { Signal } from "@/lib/domain/signal";
-import { BRANDS, COMMON_WORD_BRANDS, LOOKALIKE_ALLOWLIST, OFFICIAL_DOMAINS, USER_CONTENT_ON_OFFICIAL } from "./brands";
+import { BRANDS, COMMON_WORD_BRANDS, LOOKALIKE_ALLOWLIST, OFFICIAL_DOMAINS, USER_CONTENT_ON_OFFICIAL, brandDisplayName } from "./brands";
 import { normalizeForMatching } from "./normalize";
 
 const SHORTENERS = new Set([
@@ -124,7 +124,7 @@ function brandSignals(host: string, registrable: string, quote: string): Signal[
         id: "url.lookalike-domain",
         severity: lookalike.exact ? "hard" : "high",
         title: `Look-alike of ${domain}`,
-        explanation: `"${registrable}" is spelled almost like ${domain}, a classic trick to impersonate ${lookalike.brand}.`,
+        explanation: `"${registrable}" is spelled almost like ${domain}, a classic trick to impersonate ${brandDisplayName(lookalike.brand)}.`,
         quote,
       },
     ];
@@ -137,8 +137,8 @@ function brandSignals(host: string, registrable: string, quote: string): Signal[
     {
       id: "url.brand-in-subdomain",
       severity: COMMON_WORD_BRANDS.has(brand) ? "high" : "hard",
-      title: `Uses the name "${brand}" on someone else's website`,
-      explanation: `The real ${brand} website is ${BRANDS[brand][0]}, but this link belongs to "${registrable}".`,
+      title: `Uses the name "${brandDisplayName(brand)}" on someone else's website`,
+      explanation: `The real ${brandDisplayName(brand)} website is ${BRANDS[brand][0]}, but this link belongs to "${registrable}".`,
       quote,
     },
   ];

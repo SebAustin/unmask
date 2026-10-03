@@ -74,3 +74,20 @@ export const LOOKALIKE_ALLOWLIST: ReadonlySet<string> = new Set([
   "purple", "people", "office", "binary", "binder", "amazing", "amazed", "stem", "seam", "chose",
   "belle", "steamy", "netflux",
 ]);
+
+/** How each brand key is written for people. */
+const BRAND_DISPLAY: Readonly<Record<string, string>> = {
+  paypal: "PayPal", apple: "Apple", icloud: "Apple", amazon: "Amazon", microsoft: "Microsoft",
+  outlook: "Microsoft", office365: "Microsoft", google: "Google", gmail: "Google", netflix: "Netflix",
+  chase: "Chase", bankofamerica: "Bank of America", wellsfargo: "Wells Fargo", citibank: "Citi",
+  capitalone: "Capital One", americanexpress: "American Express", amex: "American Express",
+  barclays: "Barclays", hsbc: "HSBC", santander: "Santander", usps: "USPS", fedex: "FedEx", dhl: "DHL",
+  royalmail: "Royal Mail", irs: "the IRS", coinbase: "Coinbase", binance: "Binance", venmo: "Venmo",
+  zelle: "Zelle", cashapp: "Cash App", facebook: "Facebook", instagram: "Instagram",
+  whatsapp: "WhatsApp", docusign: "DocuSign", walmart: "Walmart", steam: "Steam", verizon: "Verizon",
+  tmobile: "T-Mobile",
+};
+
+export function brandDisplayName(brand: string): string {
+  return BRAND_DISPLAY[brand] ?? brand.charAt(0).toUpperCase() + brand.slice(1);
+}

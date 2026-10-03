@@ -28,6 +28,11 @@ describe("textSignals", () => {
     );
   });
 
+  it("isn't fooled by unrelated negations nearby", () => {
+    expect(ids("Don't worry, just send me the code you got by text")).toContain("text.credential-request");
+    expect(ids("Never mind the delay, send me the code now")).toContain("text.credential-request");
+  });
+
   it("flags secrecy, remote access, prizes, job pay and guaranteed returns", () => {
     expect(ids("Keep this between us, don't tell your mom")).toContain("text.secrecy");
     expect(ids("Install AnyDesk so our technician can fix it")).toContain("text.remote-access");

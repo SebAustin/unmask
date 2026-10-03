@@ -28,9 +28,10 @@ interface PromptInput {
 }
 
 export function buildAnalysisPrompt({ exhibit, signals, boundary }: PromptInput): string {
-  const neutralized = exhibit.replace(/<\s*\/?\s*untrusted_message[^>]*>/gi, "[tag removed]");
+  const neutralized = exhibit.replace(/<[\s/]*untrusted_message[^>]{0,200}>?/gi, "[tag removed]");
   const signalLines = signals.length
-    ? signals.map((s) => `- [${s.severity}] ${s.title}: ${s.explanation}`).join("\n")
+    ? // Titles come from fixed lists; explanations can embed attacker-controlled text (display names, hosts), so they stay out.
+      signals.map((s) => `- [${s.severity}] ${s.id}`).join("\n")
     : "- none found";
   return `Automated checks already found these warning signs (they are reliable):
 ${signalLines}

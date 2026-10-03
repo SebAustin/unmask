@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700" role="img" aria-labelledby="t d" font-family="Georgia, 'Times New Roman', serif">
+  <title id="t">Unmask architecture</title>
+  <desc id="d">A submission is redacted, checked by deterministic signals and an open-source model, then fused into a verdict. Hard signals set a floor the model cannot lower.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1c1a16"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="700" fill="#f3eee2"/>
+  <text x="30" y="42" font-size="28" font-weight="bold" fill="#1c1a16">Unmask: how a message becomes a verdict</text>
+
+  <!-- Row 1 -->
+  <g fill="#fbf8f0" stroke="#1c1a16" stroke-width="2">
+    <rect x="30" y="110" width="240" height="100" rx="4"/>
+    <rect x="330" y="110" width="240" height="100" rx="4" stroke-dasharray="7 5"/>
+    <rect x="630" y="110" width="240" height="100" rx="4"/>
+    <rect x="930" y="110" width="240" height="100" rx="4"/>
+  </g>
+  <g fill="#1c1a16" font-family="Helvetica, Arial, sans-serif">
+    <text x="48" y="140" font-size="18" font-weight="bold">Submission</text>
+    <text x="48" y="168" font-size="14">Text, link, email headers,</text>
+    <text x="48" y="188" font-size="14">or one screenshot</text>
+
+    <text x="348" y="140" font-size="18" font-weight="bold">Vision read</text>
+    <text x="348" y="168" font-size="14">Screenshot only. The image</text>
+    <text x="348" y="188" font-size="14">goes to the model as-is.</text>
+
+    <text x="648" y="140" font-size="18" font-weight="bold">Redact</text>
+    <text x="648" y="168" font-size="14">Masks cards, SSNs, codes and</text>
+    <text x="648" y="188" font-size="14">passwords before any model</text>
+
+    <text x="948" y="140" font-size="18" font-weight="bold">Extract</text>
+    <text x="948" y="168" font-size="14">URLs, emails and phone numbers</text>
+    <text x="948" y="188" font-size="14">from the redacted text</text>
+  </g>
+
+  <!-- Row 2 -->
+  <g fill="#fbf8f0" stroke="#1c1a16" stroke-width="2">
+    <rect x="30" y="300" width="240" height="100" rx="4" stroke="#b3261e" stroke-width="3"/>
+    <rect x="330" y="300" width="240" height="100" rx="4"/>
+    <rect x="630" y="300" width="240" height="100" rx="4"/>
+    <rect x="930" y="300" width="240" height="100" rx="4" stroke="#b3261e" stroke-width="3"/>
+  </g>
+  <g fill="#1c1a16" font-family="Helvetica, Arial, sans-serif">
+    <text x="48" y="330" font-size="18" font-weight="bold" fill="#b3261e">Signals</text>
+    <text x="48" y="358" font-size="14">Deterministic rules. Never</text>
+    <text x="48" y="378" font-size="14">fetches a URL.</text>
+
+    <text x="348" y="330" font-size="18" font-weight="bold">Analysis model</text>
+    <text x="348" y="358" font-size="14">Open model on Featherless,</text>
+    <text x="348" y="378" font-size="14">JSON out, one repair retry</text>
+
+    <text x="648" y="330" font-size="18" font-weight="bold">Match spans</text>
+    <text x="648" y="358" font-size="14">Keeps only quotes found</text>
+    <text x="648" y="378" font-size="14">word for word in the message</text>
+
+    <text x="948" y="330" font-size="18" font-weight="bold" fill="#b3261e">Fuse</text>
+    <text x="948" y="358" font-size="14">Score: max(signals, floor, model)</text>
+    <text x="948" y="378" font-size="14">Label comes from the score</text>
+  </g>
+
+  <!-- Row 3 -->
+  <g fill="#fbf8f0" stroke="#1c1a16" stroke-width="2">
+    <rect x="330" y="510" width="240" height="90" rx="4" stroke-dasharray="7 5"/>
+    <rect x="630" y="510" width="540" height="90" rx="4" fill="#1c1a16"/>
+  </g>
+  <g font-family="Helvetica, Arial, sans-serif">
+    <text x="348" y="538" font-size="18" font-weight="bold" fill="#1c1a16">If the model fails</text>
+    <text x="348" y="564" font-size="14" fill="#1c1a16">Signals-only verdict, clearly</text>
+    <text x="348" y="584" font-size="14" fill="#1c1a16">labeled as degraded</text>
+
+    <text x="650" y="538" font-size="18" font-weight="bold" fill="#f3eee2">Verdict and verification plan</text>
+    <text x="650" y="564" font-size="14" fill="#f3eee2">Scam, Suspicious or Likely safe. Risk 0-100, quoted red flags,</text>
+    <text x="650" y="584" font-size="14" fill="#f3eee2">and steps that use channels you find yourself.</text>
+  </g>
+
+  <!-- Arrows, row 1 -->
+  <g fill="none" stroke="#1c1a16" stroke-width="2.5" marker-end="url(#arrow)">
+    <path d="M270 160 H328" stroke-dasharray="7 5"/>
+    <path d="M570 160 H628" stroke-dasharray="7 5"/>
+    <path d="M870 160 H928"/>
+    <!-- text-only path skips the vision read -->
+    <path d="M150 110 V84 H750 V108"/>
+    <!-- extract down to signals -->
+    <path d="M1050 210 V255 H150 V298"/>
+    <!-- row 2 -->
+    <path d="M270 350 H328"/>
+    <path d="M570 350 H628"/>
+    <path d="M870 350 H928"/>
+    <!-- fuse to verdict -->
+    <path d="M1110 400 V508"/>
+    <!-- model failure path -->
+    <path d="M450 400 V508" stroke-dasharray="7 5"/>
+    <path d="M570 555 H628" stroke-dasharray="7 5"/>
+  </g>
+
+  <!-- Signal Floor bypass -->
+  <path d="M150 400 V445 H990 V402" fill="none" stroke="#b3261e" stroke-width="3.5" marker-end="url(#arrow-red)"/>
+  <text x="480" y="478" font-size="16" font-weight="bold" fill="#b3261e" font-family="Helvetica, Arial, sans-serif">Signal Floor: the model can raise the score, never lower it</text>
+
+  <!-- Path labels -->
+  <g font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#1c1a16">
+    <text x="450" y="76" text-anchor="middle">text, link, headers go straight to redaction</text>
+    <text x="300" y="150" text-anchor="middle" font-size="14">image</text>
+  </g>
+
+  <!-- Footer principles -->
+  <rect x="30" y="625" width="1140" height="55" rx="4" fill="none" stroke="#1c1a16" stroke-width="1.5"/>
+  <g font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#1c1a16">
+    <text x="48" y="648">Nothing is stored. Logs hold request ID, input types, latency and status only.</text>
+    <text x="48" y="668">Runs on Vercel (Node, maxDuration 60). Model calls are sequential, within an 18 s text or 35 s screenshot budget.</text>
+  </g>
+</svg>

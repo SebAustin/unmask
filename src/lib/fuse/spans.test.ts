@@ -24,6 +24,12 @@ describe("matchSpans", () => {
     expect(exhibit.slice(flag.start, flag.end)).toBe(flag.quote);
   });
 
+  it("keeps offsets exact even when lower-casing would change the string length", () => {
+    const tricky = "İİİİ Send gift cards now";
+    const [flag] = matchSpans([{ quote: "gift cards", explanation: "x", source: "model" }], tricky);
+    expect(tricky.slice(flag.start, flag.end)).toBe("gift cards");
+  });
+
   it("drops quotes that don't appear verbatim (hallucinated or paraphrased)", () => {
     expect(matchSpans([{ quote: "click the link", explanation: "x", source: "model" }], exhibit)).toEqual([]);
     expect(matchSpans([{ quote: "  ", explanation: "x", source: "model" }], exhibit)).toEqual([]);

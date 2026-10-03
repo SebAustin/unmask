@@ -9,6 +9,7 @@ import { clientKey, createRateLimiter, type RateLimiter } from "./rate-limit";
 
 export type ErrorCode =
   | "invalid_input"
+  | "unsupported_media_type"
   | "payload_too_large"
   | "rate_limited"
   | "image_unreadable"
@@ -48,13 +49,18 @@ export async function handleAnalyze(request: Request, deps: HandlerDeps = {}): P
     });
   }
 
+  // Requiring JSON also forces a CORS preflight for cross-site posts (SECURITY.md F-09).
+  if (!(request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json")) {
+    return fail(415, "unsupported_media_type", "Please send the request as JSON.");
+  }
+
   const declaredLength = Number(request.headers.get("content-length") ?? 0);
   if (declaredLength > LIMITS.bodyBytes) return fail(413, "payload_too_large", "That's too large to check. Try a smaller screenshot or shorter text.");
 
   let body: unknown;
   try {
     const raw = await request.text();
-    if (raw.length > LIMITS.bodyBytes) return fail(413, "payload_too_large", "That's too large to check. Try a smaller screenshot or shorter text.");
+    if (new TextEncoder().encode(raw).byteLength > LIMITS.bodyBytes) return fail(413, "payload_too_large", "That's too large to check. Try a smaller screenshot or shorter text.");
     body = JSON.parse(raw);
   } catch {
     return fail(400, "invalid_input", "The request couldn't be read. Please try again.");
@@ -80,6 +86,8 @@ export async function handleAnalyze(request: Request, deps: HandlerDeps = {}): P
       visionMs: result.meta.visionMs,
       analysisMs: result.meta.analysisMs,
       repairRetried: result.meta.repairRetried,
+      visionError: result.meta.visionError,
+      analysisError: result.meta.analysisError,
       model: models.analysisModelId,
     };
     if (!result.ok) {
@@ -96,7 +104,13 @@ export async function handleAnalyze(request: Request, deps: HandlerDeps = {}): P
     });
     return json<Verdict>({ ok: true, data: result.verdict, error: null, requestId }, 200);
   } catch (error) {
-    logEvent({ requestId, event: "analyze.error", status: 500, errorCode: (error as Error).name });
+    logEvent({
+      requestId,
+      event: "analyze.error",
+      status: 500,
+      errorCode: (error as Error).name,
+      stack: (error as Error).stack?.split("\n").slice(1, 6).map((line) => line.trim()),
+    });
     return json<Verdict>(
       { ok: false, data: null, error: { code: "internal_error", message: "Something went wrong on our side. Please try again." }, requestId },
       500,

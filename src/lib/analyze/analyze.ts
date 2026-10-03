@@ -2,14 +2,16 @@ import { generateText, type LanguageModel, type ModelMessage } from "ai";
 import type { DegradedReason, Verdict } from "@/lib/domain/verdict";
 import type { Submission } from "@/lib/domain/submission";
 import { extractContacts } from "@/lib/evidence/extract";
-import { fuseVerdict } from "@/lib/fuse/fuse";
+import { fuseVerdict, labelFor } from "@/lib/fuse/fuse";
 import { matchSpans, type CandidateFlag } from "@/lib/fuse/spans";
 import { redact } from "@/lib/redact/redact";
 import { inferScamType, templatedSummary } from "@/lib/respond/fallback";
-import { verificationPlan } from "@/lib/respond/plan";
+import { safeIdentityName, verificationPlan } from "@/lib/respond/plan";
 import { collectSignals } from "@/lib/signals/collect";
 import { parseHeaders } from "@/lib/signals/headers";
+import { injectionSignals } from "@/lib/signals/injection";
 import { parseAssessment, type ModelAssessment } from "./assessment";
+import { stripContacts } from "./sanitize";
 import { ANALYSIS_SYSTEM_PROMPT, REPAIR_PROMPT, VISION_SYSTEM_PROMPT, buildAnalysisPrompt } from "./prompt";
 
 export interface Deadlines {
@@ -40,10 +42,26 @@ export type AnalyzeResult =
   | { ok: true; verdict: Verdict; meta: AnalyzeMeta }
   | { ok: false; code: "image_unreadable"; message: string; meta: AnalyzeMeta };
 
+export interface ErrorInfo {
+  readonly name: string;
+  readonly statusCode?: number;
+}
+
 export interface AnalyzeMeta {
   readonly visionMs: number | null;
   readonly analysisMs: number | null;
   readonly repairRetried: boolean;
+  /** Why vision/analysis failed, without any message text (may echo user content). */
+  readonly visionError: ErrorInfo | null;
+  readonly analysisError: ErrorInfo | null;
+}
+
+interface MutableMeta {
+  visionMs: number | null;
+  analysisMs: number | null;
+  repairRetried: boolean;
+  visionError: ErrorInfo | null;
+  analysisError: ErrorInfo | null;
 }
 
 type ModelOutcome = { ok: true; assessment: ModelAssessment } | { ok: false; reason: DegradedReason };
@@ -55,12 +73,12 @@ export async function analyzeSubmission(submission: Submission, deps: AnalyzeDep
   const deadline = startedAt + (submission.image ? deadlines.image : deadlines.text);
   const remaining = () => Math.max(0, deadline - now());
   const unverifiable: string[] = [];
-  const meta = { visionMs: null as number | null, analysisMs: null as number | null, repairRetried: false };
+  const meta: MutableMeta = { visionMs: null, analysisMs: null, repairRetried: false, visionError: null, analysisError: null };
 
   let visionText = "";
   if (submission.image) {
     const visionStart = now();
-    const read = await readScreenshot(submission.image, deps.visionModel, Math.min(deadlines.vision, remaining()), deps);
+    const read = await readScreenshot(submission.image, deps.visionModel, Math.min(deadlines.vision, remaining()), deps, meta);
     meta.visionMs = now() - visionStart;
     if (read === null) {
       const hasOtherInput = Boolean(submission.text || submission.url || submission.headers);
@@ -74,7 +92,8 @@ export async function analyzeSubmission(submission: Submission, deps: AnalyzeDep
       }
       unverifiable.push("The screenshot could not be read.");
     } else {
-      visionText = read;
+      visionText = read.text;
+      if (!read.complete) unverifiable.push("The screenshot may not have been fully read.");
     }
   }
 
@@ -82,13 +101,18 @@ export async function analyzeSubmission(submission: Submission, deps: AnalyzeDep
   const { text: exhibit, masks } = redact(rawExhibit);
   const contacts = extractContacts(exhibit);
   const headers = submission.headers ? parseHeaders(submission.headers) : null;
-  const signals = collectSignals({ exhibit, ...contacts, headers });
+  const bodySignals = collectSignals({ exhibit, ...contacts, headers });
+  // Raw headers (display names, subjects) can carry injection too (SECURITY.md F-02).
+  const headerInjection = submission.headers && !bodySignals.some((s) => s.id.startsWith("injection."))
+    ? injectionSignals(submission.headers).map((s) => ({ ...s, quote: undefined })) // header text is not in the exhibit
+    : [];
+  const signals = [...bodySignals, ...headerInjection];
 
   const analysisStart = now();
   const outcome = await assess(exhibit, signals, deps, remaining, deadlines.minRepair, meta);
   meta.analysisMs = now() - analysisStart;
 
-  const assessment = outcome.ok ? outcome.assessment : null;
+  const assessment = outcome.ok ? sanitizeAssessment(outcome.assessment) : null;
   const fused = fuseVerdict(signals, assessment);
   const candidates: CandidateFlag[] = [
     ...signals.filter((s) => s.quote).map((s) => ({ quote: s.quote!, explanation: s.title, source: "signal" as const })),
@@ -100,10 +124,15 @@ export async function analyzeSubmission(submission: Submission, deps: AnalyzeDep
   const verdict: Verdict = {
     label: fused.label,
     riskScore: fused.riskScore,
-    scamType: fused.label === "likely_safe" ? scamType : planType,
-    claimedIdentity: assessment?.claimedIdentity ?? null,
+    // Never show e.g. "Bank impersonation" next to "Likely safe".
+    scamType: fused.label === "likely_safe" ? "none" : planType,
+    // Only curated brand names or generic roles; never the model's raw free text (SECURITY.md F-01).
+    claimedIdentity: safeIdentityName(assessment?.claimedIdentity ?? null),
     requestedAction: assessment?.requestedAction ?? null,
-    summary: assessment?.summary || templatedSummary(signals),
+    // When the Signal Floor overrules a model that thought it was safe, the model's reassuring summary would contradict the verdict.
+    summary: assessment?.summary && !(labelFor(assessment.riskScore) === "likely_safe" && fused.label !== "likely_safe")
+      ? assessment.summary
+      : templatedSummary(signals),
     unverifiable: [...unverifiable, ...(assessment?.unverifiable ?? [])],
     exhibit,
     redFlags: matchSpans(candidates, exhibit),
@@ -115,6 +144,17 @@ export async function analyzeSubmission(submission: Submission, deps: AnalyzeDep
     phones: contacts.phones,
   };
   return { ok: true, verdict, meta };
+}
+
+function sanitizeAssessment(assessment: ModelAssessment): ModelAssessment {
+  return {
+    ...assessment,
+    summary: stripContacts(assessment.summary),
+    requestedAction: assessment.requestedAction ? stripContacts(assessment.requestedAction) : null,
+    unverifiable: assessment.unverifiable.map(stripContacts),
+    // Quotes stay verbatim (they are matched against the exhibit); explanations are our words to the user.
+    redFlags: assessment.redFlags.map((flag) => ({ ...flag, explanation: stripContacts(flag.explanation) })),
+  };
 }
 
 function composeExhibit(submission: Submission, visionText: string): string {
@@ -130,7 +170,7 @@ async function assess(
   deps: AnalyzeDeps,
   remaining: () => number,
   minRepair: number,
-  meta: { repairRetried: boolean },
+  meta: MutableMeta,
 ): Promise<ModelOutcome> {
   if (!deps.analysisModel) return { ok: false, reason: "not_configured" };
 
@@ -151,6 +191,7 @@ async function assess(
     const repaired = parseAssessment(second);
     return repaired.ok ? { ok: true, assessment: repaired.value } : { ok: false, reason: "parse_failed" };
   } catch (error) {
+    meta.analysisError = errorInfo(error);
     return { ok: false, reason: classifyError(error) };
   }
 }
@@ -170,17 +211,24 @@ async function callModel(deps: AnalyzeDeps, messages: ModelMessage[], timeoutMs:
   return text;
 }
 
+interface ScreenshotText {
+  readonly text: string;
+  /** False when the reply was cut off or wasn't the requested JSON. */
+  readonly complete: boolean;
+}
+
 async function readScreenshot(
   dataUrl: string,
   model: LanguageModel | null,
   timeoutMs: number,
   deps: AnalyzeDeps,
-): Promise<string | null> {
+  meta: MutableMeta,
+): Promise<ScreenshotText | null> {
   if (!model || timeoutMs <= 0) return null;
   const [header, base64] = dataUrl.split(",", 2);
   const mediaType = header.slice("data:".length, header.indexOf(";"));
   try {
-    const { text } = await generateText({
+    const { text, finishReason } = await generateText({
       model,
       system: VISION_SYSTEM_PROMPT,
       messages: [
@@ -198,14 +246,20 @@ async function readScreenshot(
       abortSignal: AbortSignal.timeout(timeoutMs),
       providerOptions: deps.providerOptions,
     });
-    return parseVision(text);
-  } catch {
+    return parseVision(text, finishReason === "length");
+  } catch (error) {
+    meta.visionError = errorInfo(error);
     return null;
   }
 }
 
-/** Accepts the requested JSON, or falls back to treating the whole reply as the transcription. */
-function parseVision(raw: string): string | null {
+const MIN_FREEFORM_TRANSCRIPT = 40;
+
+/**
+ * Accepts the requested JSON. A truncated reply keeps the salvaged "text" value; a reply that isn't JSON
+ * (a refusal, or prose) is only used if it's long enough to plausibly be a transcription.
+ */
+function parseVision(raw: string, truncated: boolean): ScreenshotText | null {
   const cleaned = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
@@ -215,12 +269,19 @@ function parseVision(raw: string): string | null {
       const text = typeof json.text === "string" ? json.text.trim() : "";
       const cues = Array.isArray(json.visualCues) ? json.visualCues.filter((c) => typeof c === "string") : [];
       const combined = [text, cues.length ? `[Visual cues: ${cues.join("; ")}]` : ""].filter(Boolean).join("\n");
-      return combined || null;
+      return combined ? { text: combined, complete: !truncated } : null;
     } catch {
-      // fall through to raw text
+      // fall through to salvage
     }
   }
-  return cleaned || null;
+  const salvaged = cleaned.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)/)?.[1];
+  if (salvaged) return { text: salvaged.replace(/\\n/g, "\n").replace(/\\"/g, '"'), complete: false };
+  return cleaned.length >= MIN_FREEFORM_TRANSCRIPT ? { text: cleaned, complete: false } : null;
+}
+
+function errorInfo(error: unknown): ErrorInfo {
+  const e = error as { name?: string; statusCode?: number };
+  return { name: e?.name ?? "Error", ...(typeof e?.statusCode === "number" ? { statusCode: e.statusCode } : {}) };
 }
 
 function classifyError(error: unknown): DegradedReason {

@@ -1,17 +1,6 @@
 import type { ScamType } from "@/lib/domain/verdict";
-import { BRANDS } from "@/lib/signals/brands";
+import { BRANDS, brandDisplayName } from "@/lib/signals/brands";
 
-const BRAND_DISPLAY: Readonly<Record<string, string>> = {
-  paypal: "PayPal", apple: "Apple", icloud: "Apple", amazon: "Amazon", microsoft: "Microsoft",
-  outlook: "Microsoft", office365: "Microsoft", google: "Google", gmail: "Google", netflix: "Netflix",
-  chase: "Chase", bankofamerica: "Bank of America", wellsfargo: "Wells Fargo", citibank: "Citi",
-  capitalone: "Capital One", americanexpress: "American Express", amex: "American Express",
-  barclays: "Barclays", hsbc: "HSBC", santander: "Santander", usps: "USPS", fedex: "FedEx", dhl: "DHL",
-  royalmail: "Royal Mail", irs: "the IRS", coinbase: "Coinbase", binance: "Binance", venmo: "Venmo",
-  zelle: "Zelle", cashapp: "Cash App", facebook: "Facebook", instagram: "Instagram",
-  whatsapp: "WhatsApp", docusign: "DocuSign", walmart: "Walmart", steam: "Steam", verizon: "Verizon",
-  tmobile: "T-Mobile",
-};
 
 const ROLE_NOUNS: readonly [RegExp, string][] = [
   [/\b(?:son|daughter|grand(?:son|daughter|ma|pa|child)|mom|mum|dad|mother|father|nephew|niece|cousin|brother|sister|family|relative)\b/i, "your family member"],
@@ -32,7 +21,7 @@ export function safeIdentityName(claimed: string | null): string | null {
   const tokens = new Set(claimed.toLowerCase().split(/[^a-z0-9]+/));
   const compact = claimed.toLowerCase().replace(/[^a-z]/g, "");
   const brand = Object.keys(BRANDS).find((b) => tokens.has(b) || compact === b);
-  if (brand) return BRAND_DISPLAY[brand] ?? null;
+  if (brand) return brandDisplayName(brand);
   for (const [pattern, noun] of ROLE_NOUNS) if (pattern.test(claimed)) return noun;
   return null;
 }

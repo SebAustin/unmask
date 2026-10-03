@@ -11,14 +11,15 @@ export interface CandidateFlag {
  * so nothing invented by the model is ever highlighted.
  */
 export function matchSpans(candidates: readonly CandidateFlag[], exhibit: string): RedFlag[] {
-  const haystack = exhibit.toLowerCase();
   const kept: RedFlag[] = [];
   for (const candidate of candidates) {
-    const needle = candidate.quote.trim().toLowerCase();
+    const needle = candidate.quote.trim();
     if (!needle) continue;
-    const start = haystack.indexOf(needle);
-    if (start < 0) continue;
-    const end = start + needle.length;
+    // Search the original string: toLowerCase() can change length ("İ") and shift offsets.
+    const match = new RegExp(escapeRegExp(needle), "i").exec(exhibit);
+    if (!match) continue;
+    const start = match.index;
+    const end = start + match[0].length;
     if (kept.some((flag) => start < flag.end && flag.start < end)) continue;
     kept.push({
       quote: exhibit.slice(start, end),
@@ -29,4 +30,8 @@ export function matchSpans(candidates: readonly CandidateFlag[], exhibit: string
     });
   }
   return kept.sort((a, b) => a.start - b.start);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

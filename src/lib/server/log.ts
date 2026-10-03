@@ -15,6 +15,10 @@ export interface LogFields {
   readonly repairRetried?: boolean;
   readonly label?: string;
   readonly errorCode?: string;
+  readonly visionError?: { readonly name: string; readonly statusCode?: number } | null;
+  readonly analysisError?: { readonly name: string; readonly statusCode?: number } | null;
+  /** Stack frames only (no message), for unexpected 500s. */
+  readonly stack?: readonly string[];
 }
 
 export function logEvent(fields: LogFields): void {

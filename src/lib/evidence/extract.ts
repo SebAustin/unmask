@@ -4,15 +4,17 @@ export interface Contacts {
   readonly phones: string[];
 }
 
-const EMAIL = /[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}/gi;
+const EMAIL = /(?<![a-z0-9._%+-])[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}/gi;
 const URL_WITH_SCHEME = /\bhttps?:\/\/[^\s<>"')]+/gi;
-const BARE_DOMAIN = /\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}(?:\/[^\s<>"')]*)?/gi;
+const BARE_DOMAIN = /(?<![a-z0-9.-])(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}(?:\/[^\s<>"')]*)?/gi;
 const PHONE = /(?:\+\d{1,3}[\s.-]?)?(?:\(\d{2,4}\)|\d{2,4})[\s.-]?\d{3,4}[\s.-]?\d{3,4}\b/g;
 const TRAILING_PUNCTUATION = /[.,;:!?]+$/;
 const MIN_PHONE_DIGITS = 10;
+/** Bounds the per-item work on adversarial input; real messages carry a handful of contacts. */
+const MAX_ITEMS = 25;
 
 export function extractContacts(text: string): Contacts {
-  const emails = unique(text.match(EMAIL) ?? []);
+  const emails = unique(text.match(EMAIL) ?? []).slice(0, MAX_ITEMS);
   const withoutEmails = emails.reduce((acc, email) => acc.split(email).join(" "), text);
 
   const schemed = (withoutEmails.match(URL_WITH_SCHEME) ?? []).map(trimPunctuation);
@@ -23,7 +25,7 @@ export function extractContacts(text: string): Contacts {
     .map((p) => p.trim())
     .filter((p) => p.replace(/\D/g, "").length >= MIN_PHONE_DIGITS);
 
-  return { urls: unique([...schemed, ...bare]), emails, phones: unique(phones) };
+  return { urls: unique([...schemed, ...bare]).slice(0, MAX_ITEMS), emails, phones: unique(phones).slice(0, MAX_ITEMS) };
 }
 
 function trimPunctuation(value: string): string {

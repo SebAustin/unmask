@@ -14,6 +14,7 @@ export function createRateLimiter(limit: number, windowMs: number, now: () => nu
         hits.set(key, recent);
         return { allowed: false, retryAfterSeconds: Math.ceil((windowMs - (t - recent[0])) / 1000) };
       }
+      hits.delete(key); // re-insert so eviction drops the least recently active key
       hits.set(key, [...recent, t]);
       if (hits.size > 10_000) hits.delete(hits.keys().next().value as string);
       return { allowed: true, retryAfterSeconds: 0 };

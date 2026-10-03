@@ -31,6 +31,15 @@ describe("POST /api/analyze", () => {
     expect(broken.status).toBe(400);
   });
 
+  it("rejects non-JSON bodies with 415", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    const res = await handleAnalyze(post(JSON.stringify({ text: "hi" }), { "content-type": "text/plain" }), {
+      env: mockEnv,
+      limiter: createRateLimiter(99, 1000),
+    });
+    expect(res.status).toBe(415);
+  });
+
   it("rejects oversized bodies with 413", async () => {
     vi.spyOn(console, "info").mockImplementation(() => {});
     const res = await handleAnalyze(post({ text: "a".repeat(4_500_000) }), { env: mockEnv, limiter: createRateLimiter(99, 1000) });
@@ -69,7 +78,10 @@ describe("POST /api/analyze", () => {
 describe("readEnv", () => {
   it("refuses mock mode in production", async () => {
     const { readEnv } = await import("./env");
-    expect(() => readEnv({ AI_MOCK: "1", VERCEL_ENV: "production" } as unknown as NodeJS.ProcessEnv)).toThrow(/production/);
+    expect(() => readEnv({ AI_MOCK: "1", VERCEL: "1" } as unknown as NodeJS.ProcessEnv)).toThrow(/deployment/);
+    expect(readEnv({ VISION_MODEL: "  ", ANALYSIS_MODEL: "" } as unknown as NodeJS.ProcessEnv).visionModel).toBe(
+      "Qwen/Qwen3-VL-30B-A3B-Instruct",
+    );
     expect(readEnv({} as unknown as NodeJS.ProcessEnv)).toMatchObject({ mock: false, analysisModel: "Qwen/Qwen3-VL-30B-A3B-Instruct" });
   });
 });

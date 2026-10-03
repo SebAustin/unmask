@@ -4,20 +4,33 @@ import { ScamTypeSchema } from "@/lib/domain/verdict";
 const MAX_RED_FLAGS = 8;
 const MAX_TEXT = 600;
 
+function keepValid<T extends z.ZodType>(item: T) {
+  return z
+    .array(z.unknown())
+    .catch([])
+    .default([])
+    .transform((values) => values.flatMap((value) => {
+      const parsed = item.safeParse(value);
+      return parsed.success ? [parsed.data as z.infer<T>] : [];
+    }));
+}
+
 const shortText = z.string().trim().max(MAX_TEXT).catch((ctx) => String(ctx.value ?? "").slice(0, MAX_TEXT));
 
 export const ModelAssessmentSchema = z.object({
-  riskScore: z.coerce.number().transform((n) => Math.round(Math.min(100, Math.max(0, n)))),
+  // Number or numeric string only: null/"" must fail so the repair retry runs (not silently become 0).
+  riskScore: z
+    .union([z.number(), z.string().trim().regex(/^\d+(?:\.\d+)?$/).transform(Number)])
+    .transform((n) => Math.round(Math.min(100, Math.max(0, n)))),
   scamType: ScamTypeSchema.catch("other"),
   claimedIdentity: z.string().trim().max(120).nullable().catch(null).default(null),
   requestedAction: z.string().trim().max(240).nullable().catch(null).default(null),
   summary: shortText.default(""),
-  unverifiable: z.array(z.string().max(240)).max(6).catch([]).default([]),
-  redFlags: z
-    .array(z.object({ quote: z.string().max(300), explanation: z.string().max(MAX_TEXT) }))
-    .catch([])
-    .default([])
-    .transform((flags) => flags.slice(0, MAX_RED_FLAGS)),
+  unverifiable: keepValid(z.string().trim().min(1).max(240)).transform((items) => items.slice(0, 6)),
+  // One malformed flag must not throw away the others.
+  redFlags: keepValid(z.object({ quote: z.string().max(300), explanation: z.string().max(MAX_TEXT) })).transform((flags) =>
+    flags.slice(0, MAX_RED_FLAGS),
+  ),
 });
 export type ModelAssessment = z.infer<typeof ModelAssessmentSchema>;
 

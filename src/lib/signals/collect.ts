@@ -1,5 +1,5 @@
 import type { Signal } from "@/lib/domain/signal";
-import { BRANDS } from "./brands";
+import { BRANDS, brandDisplayName } from "./brands";
 import { headerSignals, type EmailHeaders } from "./headers";
 import { injectionSignals } from "./injection";
 import { textSignals } from "./text";
@@ -43,7 +43,7 @@ function phoneSignals({ exhibit, phones, urls }: SignalInput): Signal[] {
       id: "phone.only-contact-channel",
       severity: "medium",
       title: "Pushes you to call a number in the message",
-      explanation: `It claims to be ${brand} but wants you to call the number it gives. Scammers answer those lines. Use the number on ${brand}'s official website or app instead.`,
+      explanation: `It claims to be ${brandDisplayName(brand)} but wants you to call the number it gives. Scammers answer those lines. Use the number on ${brandDisplayName(brand)}'s official website or app instead.`,
       quote: phones[0],
     },
   ];

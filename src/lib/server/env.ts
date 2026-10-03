@@ -3,12 +3,24 @@ import { z } from "zod";
 
 const DEFAULT_MODEL = "Qwen/Qwen3-VL-30B-A3B-Instruct";
 
+/** Blank values (a common dashboard slip) fall back to the default instead of breaking every request. */
+const modelId = z
+  .string()
+  .optional()
+  .transform((v) => v?.trim() || DEFAULT_MODEL);
+
 const EnvSchema = z.object({
-  FEATHERLESS_API_KEY: z.string().trim().min(1).optional().catch(undefined),
-  VISION_MODEL: z.string().trim().min(1).default(DEFAULT_MODEL),
-  ANALYSIS_MODEL: z.string().trim().min(1).default(DEFAULT_MODEL),
-  AI_MOCK: z.enum(["0", "1"]).default("0").catch("0"),
-  VERCEL_ENV: z.string().optional(),
+  FEATHERLESS_API_KEY: z
+    .string()
+    .optional()
+    .transform((v) => v?.trim() || undefined),
+  VISION_MODEL: modelId,
+  ANALYSIS_MODEL: modelId,
+  AI_MOCK: z
+    .string()
+    .optional()
+    .transform((v) => ["1", "true", "yes"].includes((v ?? "").trim().toLowerCase())),
+  VERCEL: z.string().optional(),
 });
 
 export type ServerEnv = {
@@ -20,9 +32,10 @@ export type ServerEnv = {
 
 export function readEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
   const env = EnvSchema.parse(source);
-  const mock = env.AI_MOCK === "1";
-  if (mock && env.VERCEL_ENV === "production") {
-    throw new Error("AI_MOCK must not be enabled in production.");
+  const mock = env.AI_MOCK;
+  // Refuse the mock on any Vercel deployment (production and previews) — SECURITY.md F-06.
+  if (mock && env.VERCEL === "1") {
+    throw new Error("AI_MOCK must not be enabled on a deployment.");
   }
   return { apiKey: env.FEATHERLESS_API_KEY, visionModel: env.VISION_MODEL, analysisModel: env.ANALYSIS_MODEL, mock };
 }

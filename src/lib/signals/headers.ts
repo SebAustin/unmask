@@ -1,5 +1,5 @@
 import type { Signal } from "@/lib/domain/signal";
-import { BRANDS, COMMON_WORD_BRANDS } from "./brands";
+import { BRANDS, COMMON_WORD_BRANDS, brandDisplayName } from "./brands";
 import { registrableDomain } from "./url";
 
 export type AuthResult = "pass" | "fail" | "softfail" | "none" | "neutral" | "unknown";
@@ -19,7 +19,7 @@ export function parseHeaders(raw: string): EmailHeaders {
   const from = header("From");
   const authLine = header("Authentication-Results") ?? "";
   return {
-    fromName: from?.match(/^"?([^"<]+?)"?\s*</)?.[1]?.trim() ?? null,
+    fromName: displayName(from),
     fromDomain: domainOf(from),
     replyToDomain: domainOf(header("Reply-To")),
     returnPathDomain: domainOf(header("Return-Path")),
@@ -40,8 +40,8 @@ export function headerSignals(headers: EmailHeaders): Signal[] {
     signals.push({
       id: "header.display-name-brand-mismatch",
       severity: "hard",
-      title: `Claims to be ${claimedBrand} but isn't sent by them`,
-      explanation: `The sender name says "${headers.fromName}", but the email actually came from ${headers.fromDomain}, which ${claimedBrand} doesn't own.`,
+      title: `Claims to be ${brandDisplayName(claimedBrand)} but isn't sent by them`,
+      explanation: `The sender name says "${headers.fromName}", but the email actually came from ${headers.fromDomain}, which ${brandDisplayName(claimedBrand)} doesn't own.`,
       quote: headers.fromName ?? undefined,
     });
   }
@@ -77,6 +77,15 @@ export function headerSignals(headers: EmailHeaders): Signal[] {
   }
 
   return signals;
+}
+
+/** `"PayPal" <a@b.com>` → `PayPal`. Parsed with indexOf: the old regex was quadratic on long inputs. */
+function displayName(from: string | null): string | null {
+  if (!from) return null;
+  const angle = from.indexOf("<");
+  if (angle <= 0) return null;
+  const name = from.slice(0, angle).trim().replace(/^"|"$/g, "").trim();
+  return name || null;
 }
 
 function domainOf(value: string | null): string | null {
