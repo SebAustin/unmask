@@ -24,6 +24,10 @@ const CASES: [string, () => unknown][] = [
   ["headers: From with 20k spaces", () => parseHeaders(`From: "${" ".repeat(20_000)}`)],
   ["prompt: 20k of '<' + spaces", () => buildAnalysisPrompt({ exhibit: "< ".repeat(10_000), signals: [], boundary: "b" })],
   ["redact: 10k digits and dots", () => redact("1.".repeat(5_000))],
+  ["redact: 'code' + 10k spaces", () => redact(`code${" ".repeat(10_000)}x`)],
+  ["redact: 'routing' + 10k spaces", () => redact(`routing${" ".repeat(10_000)}x`)],
+  ["redact: 'account' + 10k spaces", () => redact(`account${" ".repeat(10_000)}x`)],
+  ["injection: spaced letters 10k", () => injectionSignals("a ".repeat(5_000))],
   ["signals: 10k mixed noise", () => collectSignals({ exhibit: "urgent gift card ".repeat(600), urls: [], emails: [], phones: [], headers: null })],
 ];
 

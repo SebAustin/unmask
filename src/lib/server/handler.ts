@@ -109,7 +109,8 @@ export async function handleAnalyze(request: Request, deps: HandlerDeps = {}): P
       event: "analyze.error",
       status: 500,
       errorCode: (error as Error).name,
-      stack: (error as Error).stack?.split("\n").slice(1, 6).map((line) => line.trim()),
+      // Frame lines only ("at …"): multi-line messages could carry user content.
+      stack: (error as Error).stack?.split("\n").filter((line) => /^\s*at /.test(line)).slice(0, 5).map((line) => line.trim()),
     });
     return json<Verdict>(
       { ok: false, data: null, error: { code: "internal_error", message: "Something went wrong on our side. Please try again." }, requestId },

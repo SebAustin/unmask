@@ -24,7 +24,7 @@ const MASK_RULES: readonly MaskRule[] = [
   {
     // "password: X" / "password=X" — but never a link or domain, which is evidence (e.g. "Reset password: paypa1.com").
     type: "password",
-    pattern: /\b(password|passcode|passwd|pwd|pass)( ?[:=] ?)(?!https?:\/\/|www\.|[\w-]+(?:\.[\w-]+)+)(\S+)/gi,
+    pattern: /\b(password|passcode|passwd|pwd|(?<!(?:boarding|bus|day|season|hall|bus) )pass)( ?[:=] ?)(?!https?:\/\/|www\.|[\w-]+(?:\.[\w-]+)+)(\S+)/gi,
     replace: (m) => `${m[1]}${m[2]}[password]`,
   },
   {
@@ -35,7 +35,7 @@ const MASK_RULES: readonly MaskRule[] = [
   },
   {
     type: "code",
-    pattern: /\b(code|otp|pin|cvv|cvc|security code)(\s*(?::|=|is)?\s*)(\d{3,8})\b/gi,
+    pattern: /\b(code|otp|pin|cvv|cvc|security code)( ?(?:[:=]|is)? ?)(\d{3,8})\b/gi,
     replace: (m) => `${m[1]}${m[2]}[code]`,
   },
   {
@@ -50,17 +50,18 @@ const MASK_RULES: readonly MaskRule[] = [
   },
   {
     type: "iban",
-    pattern: /\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,4})?\b/gi,
-    replace: () => "[IBAN]",
+    // Must pass the IBAN mod-97 checksum and must not sit inside a link or domain (robustness H-C).
+    pattern: /(?<![\w./:@-])[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,4})?(?![\w./:@-])/gi,
+    replace: (m) => (isValidIban(m[0]) ? "[IBAN]" : null),
   },
   {
     type: "routing",
-    pattern: /\b(routing(?:\s+(?:number|no\.?|#))?\s*:?\s*)(\d{9})\b/gi,
+    pattern: /\b(routing(?: (?:number|no\.?|#))? ?:? ?)(\d{9})\b/gi,
     replace: (m) => `${m[1]}[routing number]`,
   },
   {
     type: "account",
-    pattern: /\b((?:account|acct|a\/c)(?:\s+(?:number|no\.?|#))?\s*[:#]?\s*)(\d{6,17})\b/gi,
+    pattern: /\b((?:account|acct|a\/c)(?: (?:number|no\.?|#))? ?[:#]? ?)(\d{6,17})\b/gi,
     replace: (m) => `${m[1]}[account ••••${lastFour(m[2])}]`,
   },
   {
@@ -91,6 +92,19 @@ function toExecArray(args: unknown[]): RegExpExecArray {
   const firstNonString = args.findIndex((a, i) => i > 0 && typeof a !== "string" && a !== undefined);
   const groups = args.slice(0, firstNonString) as string[];
   return Object.assign(groups, { index: args[firstNonString] as number, input: "" }) as unknown as RegExpExecArray;
+}
+
+/** ISO 13616 mod-97 check: move the first four characters to the end, letters → numbers, remainder must be 1. */
+export function isValidIban(raw: string): boolean {
+  const iban = raw.replace(/ /g, "").toUpperCase();
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
+  const rearranged = iban.slice(4) + iban.slice(0, 4);
+  let remainder = 0;
+  for (const ch of rearranged) {
+    const value = ch >= "A" ? String(ch.charCodeAt(0) - 55) : ch;
+    for (const digit of value) remainder = (remainder * 10 + Number(digit)) % 97;
+  }
+  return remainder === 1;
 }
 
 export function passesLuhn(digits: string): boolean {

@@ -179,6 +179,18 @@ describe("analyzeSubmission", () => {
     expect(result.ok && result.verdict.unverifiable).toContain("The screenshot could not be read.");
   });
 
+  it("does not mistake normal machine headers for injection (robustness H-A)", async () => {
+    const calendar = [
+      'From: "Google Calendar" <calendar-notification@google.com>',
+      "Message-ID: <assistant.abc123@google.com>",
+      "Return-Path: <system@bounce.google.com>",
+      "Authentication-Results: mx.example.com; spf=pass; dkim=pass; dmarc=pass",
+      "Subject: Invitation: Team sync @ Mon 10am",
+    ].join("\n");
+    const result = await analyzeSubmission({ headers: calendar }, deps());
+    expect(result.ok && result.verdict.signals.map((s) => s.id)).not.toContain("injection.instructions-to-ai");
+  });
+
   it("checks raw email headers", async () => {
     const result = await analyzeSubmission(
       { headers: 'From: "PayPal" <service@paypa1-alerts.com>\nReply-To: x@gmail.com' },

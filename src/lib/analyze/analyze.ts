@@ -103,8 +103,10 @@ export async function analyzeSubmission(submission: Submission, deps: AnalyzeDep
   const headers = submission.headers ? parseHeaders(submission.headers) : null;
   const bodySignals = collectSignals({ exhibit, ...contacts, headers });
   // Raw headers (display names, subjects) can carry injection too (SECURITY.md F-02).
-  const headerInjection = submission.headers && !bodySignals.some((s) => s.id.startsWith("injection."))
-    ? injectionSignals(submission.headers).map((s) => ({ ...s, quote: undefined })) // header text is not in the exhibit
+  // Only human-written header fields; Message-ID / Return-Path / Authentication-Results are machine noise.
+  const headerText = [headers?.fromName, headers?.subject].filter(Boolean).join("\n");
+  const headerInjection = headerText && !bodySignals.some((s) => s.id.startsWith("injection."))
+    ? injectionSignals(headerText).map((s) => ({ ...s, quote: undefined })) // header text is not in the exhibit
     : [];
   const signals = [...bodySignals, ...headerInjection];
 
@@ -275,8 +277,16 @@ function parseVision(raw: string, truncated: boolean): ScreenshotText | null {
     }
   }
   const salvaged = cleaned.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)/)?.[1];
-  if (salvaged) return { text: salvaged.replace(/\\n/g, "\n").replace(/\\"/g, '"'), complete: false };
+  if (salvaged) return { text: unescapeJsonString(salvaged), complete: false };
   return cleaned.length >= MIN_FREEFORM_TRANSCRIPT ? { text: cleaned, complete: false } : null;
+}
+
+function unescapeJsonString(value: string): string {
+  try {
+    return JSON.parse(`"${value.replace(/\\$/, "")}"`) as string;
+  } catch {
+    return value.replace(/\\n/g, "\n").replace(/\\"/g, '"');
+  }
 }
 
 function errorInfo(error: unknown): ErrorInfo {

@@ -41,6 +41,17 @@ describe("redact", () => {
     expect(redact("Your password is about to expire").text).toBe("Your password is about to expire");
   });
 
+  it("never treats link or domain fragments as IBANs (robustness H-C)", () => {
+    expect(redact("Visit pp12securelogin.com").text).toBe("Visit pp12securelogin.com");
+    expect(redact("paypal.ab12verifyacct.ru").text).toBe("paypal.ab12verifyacct.ru");
+    expect(redact("bit.ly/ab12cdEFghIJ").text).toBe("bit.ly/ab12cdEFghIJ");
+    expect(redact("ab12 this that and more").text).toBe("ab12 this that and more");
+  });
+
+  it("does not mask boarding passes", () => {
+    expect(redact("boarding pass: GATE 12").text).toBe("boarding pass: GATE 12");
+  });
+
   it("never masks phone numbers, which are evidence the user needs to see", () => {
     const message = "Call +1 (800) 555-0100 or 202-555-0147 now";
     expect(redact(message).text).toBe(message);

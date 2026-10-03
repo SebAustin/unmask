@@ -6,6 +6,7 @@ export type AuthResult = "pass" | "fail" | "softfail" | "none" | "neutral" | "un
 
 export interface EmailHeaders {
   readonly fromName: string | null;
+  readonly subject: string | null;
   readonly fromDomain: string | null;
   readonly replyToDomain: string | null;
   readonly returnPathDomain: string | null;
@@ -20,6 +21,7 @@ export function parseHeaders(raw: string): EmailHeaders {
   const authLine = header("Authentication-Results") ?? "";
   return {
     fromName: displayName(from),
+    subject: header("Subject"),
     fromDomain: domainOf(from),
     replyToDomain: domainOf(header("Reply-To")),
     returnPathDomain: domainOf(header("Return-Path")),

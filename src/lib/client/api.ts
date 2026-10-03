@@ -3,20 +3,41 @@ import type { Submission } from "@/lib/domain/submission";
 
 export type AnalyzeResponse = { ok: true; verdict: Verdict } | { ok: false; message: string };
 
-const CLIENT_TIMEOUT_MS = 45_000;
+/** Longer than the server route maxDuration (60 s) so slow uploads aren't cut off client-side. */
+const CLIENT_TIMEOUT_MS = 70_000;
 const OVERSIZE_MESSAGE = "That's too large to check. Try a smaller screenshot or shorter text.";
+
+/**
+ * Combines the caller's abort signal with a timeout. Avoids AbortSignal.any / AbortSignal.timeout,
+ * which older Safari (< 17.4, iOS 16) lacks — calling them would fail every request (robustness H-D).
+ */
+function withTimeout(signal: AbortSignal | undefined, ms: number, timedOut: { value: boolean }): AbortSignal {
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    timedOut.value = true;
+    controller.abort();
+  }, ms);
+  const clear = () => clearTimeout(timer);
+  controller.signal.addEventListener("abort", clear, { once: true });
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", () => controller.abort(), { once: true });
+  }
+  return controller.signal;
+}
 
 export async function requestAnalysis(submission: Submission, signal?: AbortSignal): Promise<AnalyzeResponse> {
   let response: Response;
+  const timedOut = { value: false };
   try {
     response = await fetch("/api/analyze", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(submission),
-      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(CLIENT_TIMEOUT_MS)]) : AbortSignal.timeout(CLIENT_TIMEOUT_MS),
+      signal: withTimeout(signal, CLIENT_TIMEOUT_MS, timedOut),
     });
-  } catch (error) {
-    if ((error as Error).name === "TimeoutError") {
+  } catch {
+    if (timedOut.value) {
       return { ok: false, message: "That took too long. Please try again in a moment." };
     }
     return { ok: false, message: "We couldn't reach Unmask. Check your connection and try again." };

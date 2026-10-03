@@ -28,6 +28,17 @@ describe("textSignals", () => {
     );
   });
 
+  it("does not flag real one-time-code messages that warn you never to share (robustness H-B)", () => {
+    for (const legit of [
+      "PayPal: 482913 is your security code. We will never ask you to share this code.",
+      "Amazon will never ask you to send your password by email.",
+      "We'll never ask you to tell us your PIN.",
+      "Your bank will never phone you and ask you to give your code.",
+    ]) {
+      expect(ids(legit), legit).not.toContain("text.credential-request");
+    }
+  });
+
   it("isn't fooled by unrelated negations nearby", () => {
     expect(ids("Don't worry, just send me the code you got by text")).toContain("text.credential-request");
     expect(ids("Never mind the delay, send me the code now")).toContain("text.credential-request");
