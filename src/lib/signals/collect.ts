@@ -14,7 +14,7 @@ export interface SignalInput {
   readonly headers: EmailHeaders | null;
 }
 
-const PAYMENT_IDS = ["text.gift-card-payment", "text.crypto-payment", "text.wire-p2p-payment"];
+const PAYMENT_IDS = ["text.gift-card-payment", "text.crypto-payment", "text.wire-p2p-payment", "text.money-request"];
 const PRESSURE_IDS = ["text.urgency", "text.secrecy"];
 const IMPERSONATION_IDS = ["url.lookalike-domain", "url.brand-in-subdomain", "url.punycode", "header.display-name-brand-mismatch"];
 const CALL_TO_ACTION = /\b(?:call|ring|phone|text|whatsapp|contact)\b/i;

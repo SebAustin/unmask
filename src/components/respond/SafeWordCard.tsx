@@ -6,21 +6,21 @@ import { generateSafeWord } from "@/lib/respond/safe-word";
 /** Family Safe Word generator. Runs entirely in the browser; nothing is sent anywhere (FR-11). */
 export function SafeWordCard() {
   const [word, setWord] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
   async function copy() {
     if (!word) return;
     try {
       await navigator.clipboard.writeText(word);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
+      setCopyState("copied");
+      setTimeout(() => setCopyState("idle"), 1800);
     } catch {
-      setCopied(false);
+      setCopyState("failed");
     }
   }
 
   return (
-    <section aria-labelledby="safeword-heading" className="relative overflow-hidden rounded-sm bg-ink p-7 text-paper shadow-[var(--shadow)] sm:p-9">
+    <section aria-labelledby="safeword-heading" className="relative overflow-hidden rounded-sm bg-ink p-7 text-paper shadow-[var(--shadow)] sm:p-9 [&_*:focus-visible]:outline-[color:var(--paper)]">
       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-paper/60">Beat AI voice clones</p>
       <h2 id="safeword-heading" className="mt-2 font-display text-[length:var(--text-title)] leading-tight">
         Make a family safe word
@@ -37,18 +37,20 @@ export function SafeWordCard() {
         >
           {word ? "Generate another" : "Generate a safe word"}
         </button>
+        <output aria-live="polite" data-testid="safe-word" className="font-display text-3xl italic tracking-wide">
+          {word ? `“${word}”` : ""}
+        </output>
         {word && (
-          <>
-            <output aria-live="polite" data-testid="safe-word" className="font-display text-3xl italic tracking-wide">
-              “{word}”
-            </output>
-            <button type="button" onClick={copy} className="text-sm underline underline-offset-4 opacity-80 hover:opacity-100">
-              {copied ? "Copied" : "Copy"}
-            </button>
-          </>
+          <button type="button" onClick={copy} className="inline-flex min-h-11 items-center px-3 text-sm underline underline-offset-4 opacity-80 hover:opacity-100">
+            {copyState === "copied" ? "Copied" : "Copy"}
+          </button>
         )}
+        <span role="status" className="sr-only">
+          {copyState === "copied" ? "Copied to clipboard" : ""}
+        </span>
       </div>
-      <p className="mt-4 text-xs text-paper/50">Generated on your device. Share it in person, never by text or email.</p>
+      {copyState === "failed" && <p className="mt-2 text-sm">Couldn&apos;t copy. Select the words and copy them yourself.</p>}
+      <p className="mt-4 text-sm text-paper/75">Generated on your device. Share it in person, never by text or email.</p>
     </section>
   );
 }

@@ -16,20 +16,31 @@ export function RecoveryPanel() {
         </h2>
         <p className="mt-1 text-ink-soft">Act fast — the first hour matters most. Pick what happened:</p>
       </div>
-      <div role="radiogroup" aria-label="What happened" className="flex flex-wrap gap-2">
-        {RECOVERY_GUIDES.map((g) => (
-          <button
-            key={g.action}
-            type="button"
-            role="radio"
-            aria-checked={action === g.action}
-            onClick={() => setAction(g.action)}
-            className="rounded-full border border-rule bg-paper-raised px-3.5 py-1.5 text-sm font-medium transition-colors duration-[var(--duration-fast)] hover:border-ink-soft aria-checked:border-ink aria-checked:bg-ink aria-checked:text-paper"
-          >
-            {g.label}
-          </button>
-        ))}
-      </div>
+      <fieldset>
+        <legend className="sr-only">What happened</legend>
+        <div className="flex flex-wrap gap-2">
+          {RECOVERY_GUIDES.map((g) => (
+            <label key={g.action} className="cursor-pointer">
+              <input
+                type="radio"
+                name="what-happened"
+                value={g.action}
+                checked={action === g.action}
+                onChange={() => setAction(g.action)}
+                className="peer sr-only"
+              />
+              <span className="inline-flex min-h-11 items-center rounded-full border border-rule-strong bg-paper-raised px-4 py-2.5 text-sm font-medium transition-colors duration-[var(--duration-fast)] hover:border-ink peer-checked:border-ink peer-checked:bg-ink peer-checked:text-paper peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[color:var(--focus)]">
+                {action === g.action && <span aria-hidden="true">✓&nbsp;</span>}
+                {g.label}
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <p role="status" className="sr-only">
+        {guide ? `${guide.label}: ${guide.steps.length} steps shown below.` : ""}
+      </p>
+      {!guide && <p className="text-sm text-ink-faint">Choose one above and the steps appear here.</p>}
 
       {guide && (
         <div className="animate-rise rounded-sm border-l-4 border-scam bg-paper-raised p-5 shadow-[var(--shadow)]">
@@ -44,8 +55,8 @@ export function RecoveryPanel() {
             <ul className="mt-2 grid gap-1.5 text-sm sm:grid-cols-2">
               {REPORT_LINKS.map((link) => (
                 <li key={link.href}>
-                  <a href={link.href} target="_blank" rel="noopener noreferrer" className="underline decoration-rule underline-offset-4 hover:decoration-ink">
-                    {link.label} ↗
+                  <a href={link.href} target="_blank" rel="noopener noreferrer" className="inline-block py-2 underline decoration-rule-strong underline-offset-4 hover:decoration-ink">
+                    {link.label} ↗<span className="sr-only"> (opens in a new tab)</span>
                   </a>
                 </li>
               ))}

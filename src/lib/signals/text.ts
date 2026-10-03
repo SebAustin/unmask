@@ -33,6 +33,13 @@ const TEXT_RULES: readonly TextRule[] = [
     pattern: /\b(?:wire transfer|wire the|zelle|venmo|cash ?app|western union|moneygram)\b/i,
   },
   {
+    id: "text.money-request",
+    severity: "medium",
+    title: "Asks you to send money",
+    explanation: "Any unexpected request for money deserves a check through a channel you already trust.",
+    pattern: /\b(?:(?:i|we) need (?:the |some )?money|send (?:me |us )?(?:the )?money|need \$\d[\d,]*|lend me \$?\d)/i,
+  },
+  {
     id: "text.urgency",
     severity: "medium",
     title: "Creates false urgency",
@@ -59,7 +66,7 @@ const TEXT_RULES: readonly TextRule[] = [
     severity: "high",
     title: "Asks you to keep it secret",
     explanation: "Being told not to tell family, friends or your bank is a hallmark of scams.",
-    pattern: /\b(?:keep (?:this|it) (?:between us|quiet|secret|confidential)|don'?t tell (?:anyone|your|my)|do not tell (?:anyone|your)|don'?t (?:call|contact) (?:the bank|your bank|anyone))\b/i,
+    pattern: /\b(?:keep (?:this|it) (?:between us|quiet|secret|confidential)|don'?t tell (?:anyone|your|my|mom|mum|dad)|do not tell (?:anyone|your)|don'?t (?:call|contact) (?:the bank|your bank|anyone|mom|mum|dad|your (?:parents|family)))\b/i,
   },
   {
     id: "text.remote-access",

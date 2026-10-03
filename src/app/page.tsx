@@ -6,18 +6,18 @@ import { SafeWordCard } from "@/components/respond/SafeWordCard";
 export default function Home() {
   return (
     <>
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-8">
+      <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-2 px-4 py-5 sm:px-8">
         <Link href="/" className="font-display text-2xl tracking-tight">
           Unmask<span className="text-scam">.</span>
         </Link>
-        <nav aria-label="Main navigation" className="flex gap-5 text-sm font-medium text-ink-soft">
-          <a href="#how" className="hover:text-ink">How it works</a>
-          <a href="#help" className="hover:text-ink">Already paid?</a>
-          <a href="#safe-word" className="hover:text-ink">Safe word</a>
+        <nav aria-label="Main navigation" className="flex gap-4 text-sm font-medium text-ink-soft sm:gap-5">
+          <a href="#how" className="hidden min-h-11 items-center hover:text-ink sm:inline-flex">How it works</a>
+          <a href="#help" className="inline-flex min-h-11 items-center hover:text-ink">Already paid?</a>
+          <a href="#safe-word" className="inline-flex min-h-11 items-center hover:text-ink">Safe word</a>
         </nav>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 pb-24 sm:px-8">
+      <main id="main" className="mx-auto max-w-6xl px-4 pb-24 sm:px-8">
         <section aria-labelledby="hero-heading" className="grid gap-6 pb-10 pt-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-end lg:pt-14">
           <h1 id="hero-heading" className="font-display text-[length:var(--text-display)] leading-[0.92] tracking-tight">
             Is it really them,
@@ -40,12 +40,12 @@ export default function Home() {
           </h2>
           <ol className="grid gap-8 sm:grid-cols-3">
             {[
-              ["Rule checks", "Deterministic checks catch look-alike web addresses, spoofed senders, gift-card and crypto demands, and hidden instructions aimed at AI filters."],
+              ["Rule checks", "Fixed rules catch fake-looking web addresses, faked senders, gift-card and crypto demands, and hidden orders aimed at AI filters."],
               ["AI analyst", "An open-source AI model reads the message like a fraud analyst, names who it pretends to be, and quotes the exact suspicious words."],
               ["Safety floor", "If the rules find hard evidence, the AI can't overrule them. A scam that tricks the AI still won't come back as safe."],
             ].map(([title, body], i) => (
               <li key={title}>
-                <span className="font-display text-4xl text-scam">0{i + 1}</span>
+                <span aria-hidden="true" className="font-display text-4xl text-scam">0{i + 1}</span>
                 <h3 className="mt-2 font-semibold">{title}</h3>
                 <p className="mt-1 text-sm leading-relaxed text-ink-soft">{body}</p>
               </li>

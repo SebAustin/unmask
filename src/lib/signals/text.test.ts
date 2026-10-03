@@ -43,6 +43,12 @@ describe("textSignals", () => {
     );
   });
 
+  it("flags requests for money and secrecy from family", () => {
+    expect(ids("Dad, something terrible happened, I need money right away, don't call mom")).toEqual(
+      expect.arrayContaining(["text.money-request", "text.urgency", "text.secrecy"]),
+    );
+  });
+
   it("finds nothing alarming in an ordinary message", () => {
     expect(textSignals("Hey, are we still on for lunch Thursday at noon?")).toEqual([]);
   });

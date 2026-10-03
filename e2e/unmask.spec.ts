@@ -8,7 +8,7 @@ test.describe("checking a message", () => {
     await page.getByLabel("Paste the suspicious message").fill(
       "URGENT: your bank account is locked. Verify your password at chase-secure-verify.top within 24 hours.",
     );
-    await page.getByRole("button", { name: "Unmask it" }).click();
+    await page.getByRole("button", { name: "Check this message" }).click();
     await expect(verdict(page)).toHaveText(/scam/i);
     await expect(page.locator(".exhibit mark").first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "How to check safely" })).toBeVisible();
@@ -32,7 +32,7 @@ test.describe("checking a message", () => {
     await page.goto("/");
     await page.getByTestId("screenshot-input").setInputFiles("e2e/fixtures/screenshot.png");
     await expect(page.getByText("screenshot.png")).toBeVisible();
-    await page.getByRole("button", { name: "Unmask it" }).click();
+    await page.getByRole("button", { name: "Check this message" }).click();
     await expect(verdict(page)).toBeVisible();
     await expect(page.locator(".exhibit")).toContainText("usps-redelivery.top");
   });
@@ -40,7 +40,7 @@ test.describe("checking a message", () => {
   test("when the AI is down the verdict is clearly labeled as rules-only", async ({ page }) => {
     await page.goto("/");
     await page.getByLabel("Paste the suspicious message").fill("[[mock:fail]] Buy gift cards urgently and keep this between us");
-    await page.getByRole("button", { name: "Unmask it" }).click();
+    await page.getByRole("button", { name: "Check this message" }).click();
     await expect(page.getByText(/comes from our automatic checks only/i)).toBeVisible();
     await expect(verdict(page)).not.toHaveText(/likely safe/i);
   });
@@ -48,7 +48,7 @@ test.describe("checking a message", () => {
   test("malformed AI output is repaired transparently", async ({ page }) => {
     await page.goto("/");
     await page.getByLabel("Paste the suspicious message").fill("[[mock:malformed]] Your account is suspended, verify now");
-    await page.getByRole("button", { name: "Unmask it" }).click();
+    await page.getByRole("button", { name: "Check this message" }).click();
     await expect(verdict(page)).toBeVisible();
     await expect(page.getByText(/comes from our automatic checks only/i)).toHaveCount(0);
   });
@@ -57,7 +57,8 @@ test.describe("checking a message", () => {
 test.describe("responding", () => {
   test("the already-paid flow gives ordered recovery steps and report links", async ({ page }) => {
     await page.goto("/#help");
-    await page.getByRole("radio", { name: /gift cards/i }).click();
+    await page.getByText("I paid with gift cards").click();
+    await expect(page.getByRole("radio", { name: /gift cards/i })).toBeChecked();
     await expect(page.getByText(/do this now/i)).toBeVisible();
     await expect(page.getByRole("link", { name: /ReportFraud\.ftc\.gov/ })).toHaveAttribute("href", "https://reportfraud.ftc.gov/");
   });
@@ -81,7 +82,7 @@ test.describe("limits and safety", () => {
     await page.route("**/api/analyze", (route) => route.fulfill({ status: 413, body: "Request Entity Too Large" }));
     await page.goto("/");
     await page.getByLabel("Paste the suspicious message").fill("hello");
-    await page.getByRole("button", { name: "Unmask it" }).click();
+    await page.getByRole("button", { name: "Check this message" }).click();
     // Next.js also renders a route-announcer alert, so match ours by its text.
     await expect(page.getByRole("alert").filter({ hasText: /too large to check/i })).toBeVisible();
   });
