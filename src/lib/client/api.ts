@@ -11,7 +11,11 @@ const OVERSIZE_MESSAGE = "That's too large to check. Try a smaller screenshot or
  * Combines the caller's abort signal with a timeout. Avoids AbortSignal.any / AbortSignal.timeout,
  * which older Safari (< 17.4, iOS 16) lacks — calling them would fail every request (robustness H-D).
  */
-function withTimeout(signal: AbortSignal | undefined, ms: number, timedOut: { value: boolean }): AbortSignal {
+function withTimeout(
+  signal: AbortSignal | undefined,
+  ms: number,
+  timedOut: { value: boolean },
+): { signal: AbortSignal; clear: () => void } {
   const controller = new AbortController();
   const timer = setTimeout(() => {
     timedOut.value = true;
@@ -23,26 +27,36 @@ function withTimeout(signal: AbortSignal | undefined, ms: number, timedOut: { va
     if (signal.aborted) controller.abort();
     else signal.addEventListener("abort", () => controller.abort(), { once: true });
   }
-  return controller.signal;
+  return { signal: controller.signal, clear };
 }
 
 export async function requestAnalysis(submission: Submission, signal?: AbortSignal): Promise<AnalyzeResponse> {
   let response: Response;
   const timedOut = { value: false };
+  const deadline = withTimeout(signal, CLIENT_TIMEOUT_MS, timedOut);
   try {
     response = await fetch("/api/analyze", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(submission),
-      signal: withTimeout(signal, CLIENT_TIMEOUT_MS, timedOut),
+      signal: deadline.signal,
     });
   } catch {
+    deadline.clear();
     if (timedOut.value) {
       return { ok: false, message: "That took too long. Please try again in a moment." };
     }
     return { ok: false, message: "We couldn't reach Unmask. Check your connection and try again." };
   }
 
+  try {
+    return await readEnvelope(response);
+  } finally {
+    deadline.clear();
+  }
+}
+
+async function readEnvelope(response: Response): Promise<AnalyzeResponse> {
   // Vercel rejects oversized bodies before our handler runs, with a non-JSON 413.
   if (response.status === 413) return { ok: false, message: OVERSIZE_MESSAGE };
 

@@ -59,7 +59,8 @@ const TEXT_RULES: readonly TextRule[] = [
     title: "Asks for a code, password or login",
     explanation: "Real companies never ask you to send or read out a verification code or password.",
     pattern: /\b(?:(?:send|tell|give|share|read|forward|reply with|confirm)\b[^.!?\n]{0,30}\b(?:code|otp|pin|password|passcode)|(?:verify|confirm|update) your (?:account|identity|login|password|card details)|login details)\b/i,
-    unless: /\b(?:do not|don't|never|won't ever|will never)\s+(?:\w+\s+){0,6}(?:share|give|tell|send|forward)\b/i,
+    // "never ask you to share" is a real warning; "don't forget / hesitate to send" is not a negation.
+    unless: /\b(?:do not|don't|never|won't ever|will never)\s+(?!(?:forget|hesitate|delay|wait|miss)\b)(?:\w+\s+){0,6}(?:share|give|tell|send|forward)\b/i,
   },
   {
     id: "text.secrecy",

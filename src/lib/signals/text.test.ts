@@ -39,6 +39,11 @@ describe("textSignals", () => {
     }
   });
 
+  it("treats 'don't forget' and 'don't hesitate' as requests, not warnings", () => {
+    expect(ids("Don't forget to send me the code you just received")).toContain("text.credential-request");
+    expect(ids("Do not hesitate to send us the verification code")).toContain("text.credential-request");
+  });
+
   it("isn't fooled by unrelated negations nearby", () => {
     expect(ids("Don't worry, just send me the code you got by text")).toContain("text.credential-request");
     expect(ids("Never mind the delay, send me the code now")).toContain("text.credential-request");

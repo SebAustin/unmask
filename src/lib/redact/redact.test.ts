@@ -48,6 +48,12 @@ describe("redact", () => {
     expect(redact("ab12 this that and more").text).toBe("ab12 this that and more");
   });
 
+  it("masks codes on their own line, and IBANs at the end of a sentence", () => {
+    expect(redact("Your code:\n482913").text).toBe("Your code:\n[code]");
+    expect(redact("Your code is: 482913").text).toBe("Your code is: [code]");
+    expect(redact("Transfer to DE89370400440532013000.").text).toBe("Transfer to [IBAN].");
+  });
+
   it("does not mask boarding passes", () => {
     expect(redact("boarding pass: GATE 12").text).toBe("boarding pass: GATE 12");
   });

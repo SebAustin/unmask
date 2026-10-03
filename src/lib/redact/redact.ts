@@ -35,7 +35,8 @@ const MASK_RULES: readonly MaskRule[] = [
   },
   {
     type: "code",
-    pattern: /\b(code|otp|pin|cvv|cvc|security code)( ?(?:[:=]|is)? ?)(\d{3,8})\b/gi,
+    // Bounded whitespace keeps this linear while covering "Your code:\n482913" and "code is: 482913".
+    pattern: /\b(code|otp|pin|cvv|cvc|security code)(\s{0,3}(?:[:=]|is)?:?\s{0,3})(\d{3,8})\b/gi,
     replace: (m) => `${m[1]}${m[2]}[code]`,
   },
   {
@@ -51,7 +52,7 @@ const MASK_RULES: readonly MaskRule[] = [
   {
     type: "iban",
     // Must pass the IBAN mod-97 checksum and must not sit inside a link or domain (robustness H-C).
-    pattern: /(?<![\w./:@-])[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,4})?(?![\w./:@-])/gi,
+    pattern: /(?<![\w./:@-])[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,4})?(?![\w/:@-]|\.\w)/gi,
     replace: (m) => (isValidIban(m[0]) ? "[IBAN]" : null),
   },
   {

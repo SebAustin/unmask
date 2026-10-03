@@ -4,7 +4,7 @@ import { normalizeForMatching } from "./normalize";
 // Every whitespace run sits between mandatory tokens: optional groups adjacent to \s* caused
 // catastrophic backtracking on long space runs (ReDoS, see SECURITY.md / robustness review C1).
 const INJECTION_PATTERNS: readonly RegExp[] = [
-  /(?<!\b(?:never|not|don't|won't|do not)\b[^.\n]{0,30})\b(?:ignore|disregard|forget|override)\b[^.\n]{0,20}\b(?:previous|prior|above|earlier|preceding)\b[^.\n]{0,15}\b(?:instructions?|prompts?|rules?|directions?)/,
+  /(?<!\b(?:never|not|don't|won't|do not)\b[^.,;\n-]{0,30})\b(?:ignore|disregard|forget|override)\b[^.\n]{0,20}\b(?:previous|prior|above|earlier|preceding)\b[^.\n]{0,15}\b(?:instructions?|prompts?|rules?|directions?)/,
   // A tag, not an address: "<system@x.com>" and Message-IDs like "<assistant.abc@google.com>" don't match.
   /<\/?[ ]?(?:system|assistant|instructions?|untrusted_message)(?:[ >/]|$)/,
   /\b(?:classify|mark|label|rate|flag|treat)(?: (?:this|the|it|me))?(?: (?:message|email|text|sms|content|request))? as (?:safe|legitimate|not (?:a )?scam|benign|harmless|trusted)\b(?![^.\n]{0,20}\bsender\b)/,
