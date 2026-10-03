@@ -3,7 +3,12 @@ import path from "node:path";
 
 /** Live/offline evaluation of the analysis pipeline. Not part of `pnpm test`. */
 export default defineConfig({
-  resolve: { alias: { "@": path.resolve(__dirname, "src") } },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+      "server-only": path.resolve(__dirname, "src/test/server-only-stub.ts"),
+    },
+  },
   test: {
     environment: "node",
     include: ["evals/**/*.eval.ts"],
