@@ -17,6 +17,9 @@ Resume point for any new session. Read this first, then `PLAN.md`.
   - robustness-reviewer: the CRITICAL ReDoS and all HIGH/MEDIUM findings fixed; re-review in progress.
 - **Docs:** README, ARCHITECTURE.md with `docs/architecture.svg`, USER-GUIDE.md, docs/RUNBOOK.md, LICENSE, and screenshots in `docs/screenshots/` (taken with the mock; retake with the live model).
 
+## Live
+- Repo: https://github.com/SebAustin/unmask · Demo: https://unmask-ivory.vercel.app (rules-only until `FEATHERLESS_API_KEY` is set in Vercel)
+
 ## Next
 1. **Blocked on the user:** `FEATHERLESS_API_KEY` in `.env.local`. Then:
    - run the keyed probe;
