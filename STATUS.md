@@ -8,13 +8,13 @@ Resume point for any new session. Read this first, then `PLAN.md`.
 - **Server:** `/api/analyze`, which handles zod validation, 413/415, rate limiting (`RATE_LIMIT_PER_MINUTE`), request IDs, the allow-list logger (error names and status codes, no content), the mock model (refused on Vercel) and the Featherless provider with thinking disabled.
 - **UI:** an accessibility pass covering the contrast tokens, native radios, live region, focus management, 44px targets, 320px with no overflow, and reduced motion.
 - **Tests:**
-  - 132 unit and integration tests at about 89% coverage on `src/lib`.
+  - 148 unit and integration tests at about 89% coverage on `src/lib`.
   - 26 Playwright runs (13 scenarios × desktop/mobile), including axe in light and dark (0 serious violations), a production-CSP check and the 320px overflow check.
   - The eval harness (44 fixtures, dev/holdout split) gives a rules-only baseline of 75% recall and 0% false positives (`evals/RESULTS-offline.md`).
 - **Reviews:**
   - ux-designer: 15 fixes applied.
   - security-auditor: `SECURITY.md`, with F-01 HIGH fixed and no CRITICAL or HIGH open. F-05 (provider budget) needs deploy-time configuration.
-  - robustness-reviewer: the CRITICAL ReDoS and all HIGH/MEDIUM findings fixed; re-review in progress.
+  - robustness-reviewer: **APPROVE** after 3 rounds. The CRITICAL ReDoS, 8 HIGH and every MEDIUM finding fixed with regression tests.
 - **Docs:** README, ARCHITECTURE.md with `docs/architecture.svg`, USER-GUIDE.md, docs/RUNBOOK.md, LICENSE, and screenshots in `docs/screenshots/` (taken with the mock; retake with the live model).
 
 ## Live
@@ -25,7 +25,7 @@ Resume point for any new session. Read this first, then `PLAN.md`.
    - run the keyed probe;
    - run `EVAL_LIVE=1 pnpm eval`, which writes `evals/RESULTS.md`, and fill the README TODO;
    - retake the screenshots without "(mock analysis)".
-2. **Gated:** create the public GitHub repo and push (CI), then deploy to Vercel. Set the env vars there, plus a Firewall rate rule and a Featherless spend cap (F-05).
+2. Set `FEATHERLESS_API_KEY` in Vercel (`vercel env add FEATHERLESS_API_KEY production`) and redeploy. Add a Firewall rate rule and a Featherless spend cap (F-05).
 3. `ACCEPTANCE.md` (solution-verifier), `launch/DEVPOST.md`, `launch/DEMO-SCRIPT.md`.
 
 ## Run
